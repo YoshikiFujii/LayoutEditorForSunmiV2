@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:orientation="horizontal"
+        android:background="#EEEEEE"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Layout Editor"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: Disconnected"/>
+
+        <Button
+            android:id="@+id/btn_connect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <!-- Elements List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:scrollbars="vertical"/>
+
+    <!-- Bottom Actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#E0E0E0">
+
+        <Button
+            android:id="@+id/btn_add_text"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add Text"
+            android:textSize="12sp"/>
+
+        <Button
+            android:id="@+id/btn_add_image"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add Img"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"/>
+            
+        <Button
+            android:id="@+id/btn_add_space"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add Space"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"/>
+            
+        <Button
+            android:id="@+id/btn_save_layout"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/black"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"/>
+
+        <Button
+            android:id="@+id/btn_save_as"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Save As"
+            android:backgroundTint="@color/teal_700"
+            android:textColor="@color/white"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"/>
+
+
+        <Button
+            android:id="@+id/btn_print"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Print"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@color/white"
+            android:layout_marginStart="8dp"/>
+
+    </LinearLayout>
+
+</LinearLayout>
