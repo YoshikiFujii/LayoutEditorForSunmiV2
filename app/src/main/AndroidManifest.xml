@@ -32,6 +32,16 @@
             android:exported="false"
             android:screenOrientation="portrait"/>
 
+        <activity android:name=".HistoryListActivity"
+            android:exported="false"
+            android:label="Print History"
+            android:parentActivityName=".ReceiveAndPrintActivity"/>
+
+        <activity android:name=".HistoryDetailActivity"
+            android:exported="false"
+            android:label="History Details"
+            android:parentActivityName=".HistoryListActivity"/>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

@@ -38,8 +38,10 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
     private static final UUID MY_UUID = UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"); // Custom UUID
 
     private TextView textStatus;
-    private TextView textReceived;
+    // private TextView textReceived; // Removed
     private Button btnCancel;
+    private Button btnHistory; // Added
+    private androidx.recyclerview.widget.RecyclerView recyclerPrintJobs; // Added
 
     private BluetoothAdapter bluetoothAdapter;
     private AcceptThread acceptThread;
@@ -47,15 +49,49 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
     private String originalLayoutJson;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private com.sunmiprinter.app.adapter.PrintJobAdapter adapter; // Added
+    private com.sunmiprinter.app.utils.PrintHistoryRepository repository; // Added
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_receive_print);
 
         textStatus = findViewById(R.id.text_status);
-        textReceived = findViewById(R.id.text_received_content);
-        textReceived.setMovementMethod(new ScrollingMovementMethod());
+        // textReceived = findViewById(R.id.text_received_content);
+        // textReceived.setMovementMethod(new ScrollingMovementMethod());
         btnCancel = findViewById(R.id.btn_cancel);
+        btnHistory = findViewById(R.id.btn_history);
+        recyclerPrintJobs = findViewById(R.id.recycler_print_jobs);
+
+        repository = new com.sunmiprinter.app.utils.PrintHistoryRepository(this);
+        adapter = new com.sunmiprinter.app.adapter.PrintJobAdapter();
+        recyclerPrintJobs.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
+        recyclerPrintJobs.setAdapter(adapter);
+
+        // Load today's history initially? Or start empty?
+        // Prompt says "update on top of previous", implies session?
+        // "Show all information... create a card for each reception"
+        // Let's load today's history so it's persistent across app restarts for the
+        // day.
+        loadTodaysHistory();
+
+        adapter.setOnReprintListener(new com.sunmiprinter.app.adapter.PrintJobAdapter.OnReprintListener() {
+            @Override
+            public void onReprint(com.sunmiprinter.app.model.PrintJob job) {
+                // Reprint logic: parse saved data and print
+                processReceivedData(job.getRawJson(), false); // false = do not save again
+            }
+        });
+
+        btnHistory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Open History List Activity
+                Intent intent = new Intent(ReceiveAndPrintActivity.this, HistoryListActivity.class);
+                startActivity(intent);
+            }
+        });
 
         String layoutJson = getIntent().getStringExtra("layout_data");
         if (layoutJson != null) {
@@ -130,13 +166,23 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
         });
     }
 
+    // appendLog removed/deprecated - could show Toast or update status?
     private void appendLog(final String log) {
-        mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                textReceived.append("\n" + log);
-            }
-        });
+        // Log to Logcat instead of UI textview
+        Log.d(TAG, log);
+    }
+
+    private void loadTodaysHistory() {
+        // Construct today's filename to load
+        String dateStr = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                .format(new java.util.Date());
+        java.io.File file = new java.io.File(getExternalFilesDir(null), "received_data_" + dateStr + ".json");
+        if (file.exists()) {
+            java.util.List<com.sunmiprinter.app.model.PrintJob> jobs = repository.loadHistory(file);
+            // Reverse to show newest on top?
+            java.util.Collections.reverse(jobs);
+            adapter.setJobs(jobs);
+        }
     }
 
     private class AcceptThread extends Thread {
@@ -216,9 +262,9 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
 
             final String receivedData = buffer.toString();
             Log.d(TAG, "Received: " + receivedData);
-            appendLog("Received data: " + receivedData);
+            // appendLog("Received data: " + receivedData);
 
-            processReceivedData(receivedData);
+            processReceivedData(receivedData, true); // true = save to history
 
             // Cleanup
             try {
@@ -252,11 +298,13 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
         }
     }
 
-    private void processReceivedData(String jsonString) {
+    private void processReceivedData(String jsonString, boolean shouldSave) {
         try {
             // Reset layout from original
-            currentLayout = LayoutStorageManager.createGson().fromJson(originalLayoutJson, PrintLayout.class);
-            LayoutStorageManager.reloadBitmaps(currentLayout);
+            if (originalLayoutJson != null) {
+                currentLayout = LayoutStorageManager.createGson().fromJson(originalLayoutJson, PrintLayout.class);
+                LayoutStorageManager.reloadBitmaps(currentLayout);
+            }
 
             Gson gson = new Gson();
             Map<String, String> data = gson.fromJson(jsonString, new TypeToken<Map<String, String>>() {
@@ -264,9 +312,24 @@ public class ReceiveAndPrintActivity extends AppCompatActivity {
 
             if (data == null || data.isEmpty()) {
                 appendLog("Error: Empty or invalid JSON map");
-                appendLog("Proceeding to print original layout...");
-                printLayout();
-                return;
+                // If empty, maybe just print layout? But we need data to fill holes.
+                // Original logic proceeded to printLayout.
+                if (shouldSave) {
+                    // Still maybe save partial? No, ignore empty.
+                }
+            } else {
+                if (shouldSave) {
+                    final com.sunmiprinter.app.model.PrintJob job = new com.sunmiprinter.app.model.PrintJob(
+                            System.currentTimeMillis(), data, jsonString);
+                    repository.savePrintJob(job);
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.addJob(0, job);
+                            recyclerPrintJobs.scrollToPosition(0);
+                        }
+                    });
+                }
             }
             appendLog("JSON Parsed. Processing " + data.size() + " entries...");
 
